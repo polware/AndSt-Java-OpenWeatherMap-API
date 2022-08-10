@@ -29,13 +29,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TextView textViewHumidity;
     private ImageView image;
     private Button btn;
+    private String textCity;
     private WeatherInterface service;
     private WeatherData weatherData;
     Retrofit retrofit;
     public static final String BASE_URL = "https://api.openweathermap.org/data/2.5/";
     public static final String BASE_ICONS = "https://openweathermap.org/img/w/";
     public static final String EXTENSION_ICONS = ".png";
-    String API_KEY="colocar_aqui_la_llave_API";
+    String API_KEY="ingresar_valor_APIKEY";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,31 +65,45 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onClick(View view) {
-        String textCity = EditTextsearch.getText().toString();
-        if (textCity != "") {
-            service.getWeatherInfo(textCity, API_KEY, "metric", "es").enqueue(new Callback<WeatherData>() {
-                @Override
-                public void onResponse(Call<WeatherData> call, Response<WeatherData> response) {
-                    weatherData = response.body();
-
-                    textViewcity.setText(new StringBuilder().append(weatherData.getName()).append(", ").append(weatherData.getSys().getCountry()).toString());
-                    String latitud = String.valueOf(weatherData.getCoord().getLat());
-                    String longitud = String.valueOf(weatherData.getCoord().getLon());
-                    textViewcoords.setText(new StringBuilder().append("Latitud: ").append(latitud).append(" | Longitud: ").append(longitud).toString());
-                    String descripcion = weatherData.getWeather().get(0).getDescription();
-                    textViewDescription.setText(new StringBuilder().append("Descripción: ").append(descripcion).toString());
-                    String temperatura = String.valueOf(weatherData.getMain().getTemp());
-                    textViewTemp.setText(new StringBuilder().append("Temp: ").append(temperatura).append(" ºC").toString());
-                    String humedad = String.valueOf(weatherData.getMain().getHumidity());
-                    textViewHumidity.setText(new StringBuilder().append("Humedad: ").append(humedad).append(" %").toString());
-                    Picasso.get().load(BASE_ICONS + weatherData.getWeather().get(0).getIcon() + EXTENSION_ICONS).into(image);
-                }
-                @Override
-                public void onFailure(Call<WeatherData> call, Throwable t) {
-                    Toast.makeText(MainActivity.this, "Error", Toast.LENGTH_LONG).show();
-                }
-            });
+        textCity = EditTextsearch.getText().toString();
+        if (!textCity.equals("")) {
+            getWeatherData();
         }
+        else {
+            Toast.makeText(MainActivity.this, "ERROR: no ha ingresado el nombre de la ciudad.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    void getWeatherData() {
+        service.getWeatherInfo(textCity, API_KEY, "metric", "es").enqueue(new Callback<WeatherData>() {
+        @Override
+        public void onResponse(Call<WeatherData> call, Response<WeatherData> response) {
+            if (response.code() == 200) {
+                weatherData = response.body();
+                assert weatherData != null;
+                textViewcity.setText(new StringBuilder().append(weatherData.getName()).append(", ").append(weatherData.getSys().getCountry()).toString());
+                String latitud = String.valueOf(weatherData.getCoord().getLat());
+                String longitud = String.valueOf(weatherData.getCoord().getLon());
+                textViewcoords.setText(new StringBuilder().append("Latitud: ").append(latitud).append(" | Longitud: ").append(longitud).toString());
+                String descripcion = weatherData.getWeather().get(0).getDescription();
+                textViewDescription.setText(new StringBuilder().append("Descripción: ").append(descripcion).toString());
+                String temperatura = String.valueOf(weatherData.getMain().getTemp());
+                textViewTemp.setText(new StringBuilder().append("Temp: ").append(temperatura).append(" ºC").toString());
+                String humedad = String.valueOf(weatherData.getMain().getHumidity());
+                textViewHumidity.setText(new StringBuilder().append("Humedad: ").append(humedad).append(" %").toString());
+                Picasso.get().load(BASE_ICONS + weatherData.getWeather().get(0).getIcon() + EXTENSION_ICONS).into(image);
+                EditTextsearch.setText("");
+            }
+            else {
+                Toast.makeText(MainActivity.this, "ERROR ("+response.code()+"): La ciudad o referencia ingresada no existe.", Toast.LENGTH_LONG).show();
+            }
+        }
+
+        @Override
+        public void onFailure(Call<WeatherData> call, Throwable t) {
+            Toast.makeText(MainActivity.this, "ERROR: "+t.getMessage(), Toast.LENGTH_LONG).show();
+        }
+        });
     }
 
 }
